@@ -1,0 +1,427 @@
+---
+title: "Statistical_inference Assignment 2"
+author: "Group_3"
+date: "Date of Submission : 2023-11-26"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+Lecturer: Ziad Taib
+header-includes: "\\usepackage{graphicx} \\usepackage{fancyhdr} \\pagestyle{fancy}
+  \\setlength\\headheight{28pt} \\fancyhead[L]{\\includegraphics[width=5cm]{AIMSCameroonlogo.jpg}}
+  \\fancyfoot[LE, RO]{AIMS-Cameroon}"
+---
+
+## Load Libraries
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+## Load and Explore Data
+
+```{r}
+# Data
+before <- c(3.57, 2.33, 4.13, 4.29, 2.85, 5.19, 5.18, 3.96, 4.33)
+after <- c(5.63, 7.45, 4.82, 10.37, 5.73, 6.22, 8.13, 6.12, 5.8)
+
+# Create a data frame
+df <- data.frame(before, after)
+
+# Summary statistics
+summary(df)
+```
+
+```{r}
+df
+```
+
+# Introduction
+
+Before moving on to the analyses, it's important to put our data into context. This is a clinical trial of a treatment designed to stabilize calcium levels in the body. Calcium concentration is measured in mml/L or mg/dL, and the normal concentration of total serum calcium is between 8.8 and 10.4 mg/dl (2.20 and 2.60 mmol/l). If we look at our data, we can assume that serum calcium is measured between 8.8 and 10.4 mg/dl.Just by looking at the pre-treatment measurement results, we can see that all nine of our patients are hypocalcemic (calcemia below 8.8 mg/dl). So the aim of treatment is to bring this measurement back to at least 8.8mg/dl.
+
+# A. Analysis 1 : Only After Treatment (One sample t-test)
+
+Considering only the post-treatment data, the analysis of these data will consist in verifying whether the treatment was able to increase the patients' mean calcemia (from 3.97 mg/dl to at least 8.8 mg/dl). We claim that the average of the data after treatment is strictly greater than the mean before 3.97 mg/dl.
+
+## a) Assumptions
+
+-Normality: Assuming normality of calcium concentration after treatment.
+
+-Independence: all the measurement of calcium concentration after treatment should be independent of each other.
+
+-Random Sampling: The data after treatment should be collected via random sampling from the population.
+
+-Interval or Ratio Data: The variable under study should be measured on an interval or ratio scale.
+
+### Test of the assumptions :
+
+1.  normality of data after treatment : Shapiro-Wilk test
+
+set the Hypothesis :
+
+-   Null Hypothesis $H_0$ : The data after treatment is normally distributed,
+
+-   Alternative Hypothesis $H_1$ : The data after treatment is not normally distributed.
+
+We perform the test with significance level = 0.05.
+
+```{r}
+# Normality Test
+shapiro_test <- shapiro.test(df$after)
+
+# Check the p-value
+if (shapiro_test$p.value > 0.05)
+  {
+  cat("Shapiro-Wilk test p-value =", shapiro_test$p.value, "( > 0.05, We fail to reject the null 
+      hypothesis and  conclude that there is normality of the data after treatment).\n")
+ } else
+   {
+  cat("Shapiro-Wilk test p-value =", shapiro_test$p.value, "( < 0.05, We
+      reject null  hypothesis and  conclude that the data after treatment is not normally distributed).\n")
+}
+
+```
+
+2.  Independence : There is not specific test for this assumption. Here the measurement is carried out on the patient, so the measurements are independent of each other.
+
+3.  Random Sampling : There is not specific test for this assumption. The data after the treatment is random sampling because the population sample is randomly selected from the population to carry out the trail.
+
+4.  Interval or Ratio Data : Also, there is not specific test for this assumption.We just be sure that our data is measured on an interval or ratio scale. Here all the observation is strictly greater than zero and doesn't fall below zero, so our data is ratio scale.
+
+## b) Test Method
+
+Thus , all the assumptions are met. We can perform the **one tailed t-test.**
+
+One-sample t-test comparing the mean calcium concentration after treatment to a hypothetical mean or threshold value ( the mean before = 3.97 ).
+
+Set the hypothesis :
+
+-   Null Hypothesis $H_0$ : The mean of the data after treatment is equal to 3.97 mg/dL,
+
+-   Alternative Hypothesis $H_1$ : The mean of the data after treatment is greater or equal to 3.97 mg/dL.
+
+```{r}
+# One-sample t-test using 'after' treatment data
+
+t.test(after, mu = 3.97, alternative = "greater")
+
+```
+
+### Interpretation :
+
+P-value = 0.0006635 \< 0.05, We reject the null hypothesis and conclude that the mean of the data after treatment is greater than to 3.97 mg/dL. Hence the treatment is effective since the patients' average calcium level has significantly increased compared with before (as we can see mean(after) = 6.69 \> mean ( before)).
+
+# B. Analysis 2 : **Change (After - Before) in Measurements (Paired-sample t-test)**
+
+We want to know if the treatment has an immediate and direct effect on calcium concentration.In fact we chosen the Paired t-test to compare the means of two related groups (paired observations).
+
+## a) Assumptions
+
+-   Paired Observations: The paired t-test assumes that the observations in the 'after' group are paired with observations in the 'before' group.
+
+-   Normality of Differences: The differences between paired observations (after - before) should be approximately normally distributed.
+
+-   scale of measurement:The data should be measured on an interval or ratio scale.
+
+-   Homogeneity of Variances: The variances of the differences between pairs should be approximately equal.
+
+### Test of the assumptions :
+
+1.  Paired Observations
+
+```{r}
+# Check if lengths are equal
+if (length(before) == length(after)) {
+  cat("Paired Observations: The lengths of 'before' and 'after' are equal.\n")
+} else {
+  stop("Paired Observations: The lengths of 'before' and 'after' are not equal.")
+}
+
+```
+
+2.  Normality of Differences : Use Shapiro-Wilk test
+
+set the Hypothesis :
+
+-   Null Hypothesis $H_0$ : The difference between the two groups of observations( before and after) is normally distributed
+
+-   Alternative Hypothesis $H_1$ : The difference between the two groups of observations (before and after) is not normally distributed.
+
+We perform the test with significance level = 0.05.
+
+```{r}
+# Differences
+diff_values <- after - before
+
+# Normality Test
+shapiro_test <- shapiro.test(diff_values)
+
+# Check the p-value
+if (shapiro_test$p.value > 0.05)
+  {
+  cat("Shapiro-Wilk test p-value =", shapiro_test$p.value, "( > 0.05, We fail to reject the null 
+      hypothesis and  conclude that there is normality in the difference between
+      the two groups of observations).\n")
+ } else
+   {
+  cat("Shapiro-Wilk test p-value =", shapiro_test$p.value, "( < 0.05, 
+      We reject the null hypothesis and  conclude that the difference between 
+      the two groups of observations is not normally distributed).\n")
+}
+
+```
+
+Hence we conclude that there is strong statistical evidence that the difference between the two observations is normally distributed.
+
+3.  scale of measurement: Here there is not specific test for this assumption.We just be sure that our data is measured on an interval or ratio scale. Here all the observation is strictly greater than zero and doesn't fall below zero, so our data is ratio scale.
+
+4.  Homogeneity of Variances : bartllet's Test for Homogeneity of Variances.
+
+Set of the Hypothesis :
+
+-   Null Hypothesis $H_0$ : The variances of the "before" and "after" groups are equal.
+
+-   Alternative Hypothesis $H_1$ : The variances of the "before" and "after" groups are not equal.
+
+```{r}
+# bartlett's Test for Homogeneity of Variances
+bartlett_test <- bartlett.test(df)
+
+# Check the p-value
+if (bartlett_test$p.value > 0.05) {
+  cat("Homogeneity of Variances: bartlett's test p-value =", bartlett_test$p.value, "(> 0.05,
+      retain Null hypothesis and  conclude The variances 
+      of the \"before\" and \"after\" groups are equal,
+      hence the assumptions of Homogeneity of variance is met.)")
+} else {
+  cat("Homogeneity of Variances: bartlett's test p-value =", 
+      bartlett_test$p.value, "(< 0.05, reject Null hypothesis
+      and conclude that The variances of the \"before\" and \"after\"
+      groups are not equal,hence the assumptions of Homogeneity of 
+      variance is not hold)")
+}
+
+
+```
+
+```{r}
+bartlett.test(df)
+```
+
+5.  Levene's Test for Homogeneity of Variance
+
+Set the hypothesis :
+
+-   Null Hypothesis (H0): The variances of the "before" and "after" groups are equal.
+
+-   Alternative Hypothesis (H1): The variances of the "before" and "after" groups are not equal.
+
+In mathematical notation:
+
+$H_0: \sigma_{\text{before}}^2 = \sigma_{\text{after}}^2$
+
+$H_1: \sigma_{\text{before}}^2 \neq \sigma_{\text{after}}^2$
+
+$\text{Where } \sigma_{\text{before}}^2 \text{ represents the variance of the "before" group and } \sigma_{\text{after}}^2 \text{ represents the variance of the "after" group.}$
+
+The significance level is 0.05.
+
+```{r}
+# Creating a data frame with the 'before' and 'after' values and a grouping variable
+data <- data.frame(values = c(before, after),
+                   groups = rep(c("Before", "After"), each = length(before)))
+
+# Convert 'groups' to a factor explicitly
+data$groups <- as.factor(data$groups)
+
+# Loading the car package
+library(car)
+
+# Performing Levene's test for homogeneity of variance
+result <- leveneTest(values ~ groups, data = data)
+print(result)
+```
+
+### Interpretation :
+
+The p-value = 0.3933 \> 0.05, we fail to reject the null hypothesis and conclude that there is a strong evidence that the assumption of homogeneity of variance of the two group is significant satisfy.
+
+## b) Test method
+
+All the assumption of **Paired-Sample t- test** are met, so we can perfom it now.
+
+Set the hypothesis :
+
+-   Null Hypothesis $H_0$ : There is no significant difference in the mean calcium concentration before and after the treatment.
+
+-   Alternative Hypothesis $H_1$ : There is a significant difference in the mean calcium concentration before and after the treatment.
+
+```{r}
+ # Paired t-test
+t.test(after, before, paired = TRUE)
+
+```
+
+### Interpretation :
+
+P-value \< 0.05, we reject the null hypothesis and conclude that There is a significant difference in the mean calcium concentration before and after the treatment.
+
+# C. Analysis 3 : After but with Before as a Covariate in Analysis (ANCOVA)
+
+## a) Assumptions
+
+-   Linearity : The relationship between the dependent variable (after treatment) and the covariate (before treatment) should be linear,
+
+-   Independent : The variable before and after should be independent,
+
+-   Normality of Residuals: The residuals (errors) should follow a normal distribution,
+
+-   Homogeneity of Variances: The variances of the differences between pairs should be approximately equal.
+
+### Test of the assumptions
+
+-   linearity
+
+```{r}
+# Scatterplot to visualize linearity
+plot(before, after, xlab = "Before", ylab = "After", main = "Scatterplot: Before vs After")
+abline(lm(after ~ before), col = "red")  # Add a linear regression line
+```
+
+-   Normality of Residuals : usind Q-Q plot, and density plot and shapiro-Wilk test
+
+```{r}
+# ANCOVA model
+model <- lm(after ~ before)
+# Residuals
+residuals <- residuals(model)
+
+# Q-Q plot for residuals
+qqnorm(residuals)
+qqline(residuals, col = "Blue")
+```
+
+```{r}
+densityPlot(residuals, col= "red" )
+```
+
+set Hypothesis :
+
+-   Null Hypothesis $H_0$ : The residual is normally distributed.
+
+-   Alternative Hypothesis $H_1$ : The residual is not normally distributed.
+
+```{r}
+shapiro.test(residuals)
+```
+
+### Interpretation
+
+p-value = 0.07991 \> 0.05, so we fail to reject the null hypothesis and conclude that the residual is normally distributed.
+
+-   Independence
+
+Set the hypothesis :
+
+-   Null Hypothesis $H_0$ : Before and after are independent,
+
+-   Alternative Hypothesis $H_1$ : before and after are not independent.
+
+```{r}
+chisq.test(table(before, after))
+```
+
+### Interpretation
+
+p-value = 0.2303 \> 0.05, so we fail to reject the null hypothesis and conclude that before and after are independent.
+
+## b) Test method (ANCOVA)
+
+set Hypothesis for Treatment Effect (Group Means):
+
+-   Null Hypothesis $H_0$: The mean calcium concentration after treatment is the same across all treatment groups (before and after treatment), after adjusting for initial calcium levels.
+
+-   Alternative Hypothesis$H_1$: There exists a significant difference in the mean calcium concentration after treatment across the groups, after adjusting for initial calcium levels.
+
+
+
+set Hypothesis Covariate Effect (Regression Coefficient):
+
+-   Null Hypothesis $H_0$: The initial calcium levels (before treatment) do not significantly influence the change in calcium concentration after treatment.
+
+-   Alternative Hypothesis $H_1$: There exists a significant relationship between the initial calcium levels and the change in calcium concentration after treatment.
+
+
+```{r}
+# ANCOVA using lm() function
+model <- lm(after ~ before)
+summary(model)
+
+```
+
+### Interpretation
+
+-   P-value f F-statistic: 0.6947 \> 0.05, we fail to reject the null hypothesis and conclude that the mean calcium concentration after treatment is not significantly different among the treatment groups after adjusting the baseline calcium concentration (before).
+
+-    P-value Coefficients: 0.0768,  0.6947  \> 0.05, so we fail to reject the null hypothesis and conclude and conclude that , there is no significant impact of initial calcium levels on the change in calcium concentration after treatment and no significant difference in calcium concentration after treatment when considering the initial calcium levels.
+
+
+**Some visualization**
+
+```{r}
+
+cor.test(before, after, alternative = "greater", exact = NULL, conf.level = 0.95)
+
+```
+
+```{r}
+defore_data = data.frame(before)
+responder <- predict(model, defore_data )
+responder
+```
+
+```{r}
+mean(responder)
+```
+
+
+```{r}
+# Given data
+before <- c(3.57, 2.33, 4.13, 4.29, 2.85, 5.19, 5.18, 3.96, 4.33)
+after <- c(5.63, 7.45, 4.82, 10.37, 5.73, 6.22, 8.13, 6.12, 5.8)
+patient_numbers <- 1:9
+
+# Plotting 'before' and 'after' data with different colors and linking lines
+plot(patient_numbers, before, col = "blue", pch = 16, xlab = "Patient Number", ylab = "Calcium Concentration", ylim = range(c(before, after)), main = "Before vs After Calcium Concentration")
+points(patient_numbers, after, col = "red", pch = 16)
+
+# Adding mean lines
+abline(h = mean(before), col = "blue")  # Line for mean of 'before'
+abline(h = mean(after), col = "red") # Line for mean of 'after'
+
+# Adding legend
+legend("topright", legend = c("Before", "After",  "Mean Before", "Mean After"), col = c("blue", "red", "blue", "red"), pch = 16)
+
+```
+
+
+# Conclusion
+We fail to reject the null hypothesis in the first two analysis and failing to reject the null hypothesis in an ANCOVA analysis does not necessarily imply that the treatment is ineffective. It suggests that, based on the data and the statistical test conducted, there isn't sufficient evidence to conclude that the treatment has a statistically significant effect on the outcome variable (calcium concentration) after adjusting for the covariate (initial calcium levels).
+
+ We need to take Considerations of :
+
+- Sample Size: Insufficient sample size might limit the statistical power to detect a true treatment effect.
+
+- Assumptions: Violation of ANCOVA assumptions (linearity) might affect the results and their interpretation.
+
+- Clinical Significance: Lack of statistical significance doesn't automatically equate to lack of clinical importance. Sometimes, even if the effect is not statistically significant, it might still be clinically relevant.
+
+- Further Exploration: The null result might warrant further investigation, including different study designs, larger sample sizes, or additional outcome measures, to better understand the treatment's effect.
+
+It's crucial to interpret the findings within the context of the study and consider various factors before drawing final conclusions about the treatment's efficacy. Consulting with domain experts or conducting further research can provide a more comprehensive understanding of the treatment's impact.
+
+
+
+
